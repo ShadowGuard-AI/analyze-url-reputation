@@ -1,5 +1,6 @@
 import argparse
 import logging
+import sys
 import pandas as pd
 import requests
 import os
@@ -44,8 +45,11 @@ def is_valid_url(url):
     """
     try:
         result = urlparse(url)
-        return all([result.scheme, result.netloc])
-    except:
+        # http and https only: a bare scheme plus netloc test also passed
+        # ftp and file style strings, which the feed check cannot fetch in
+        # the way the report implies.
+        return result.scheme in ("http", "https") and bool(result.netloc)
+    except ValueError:
         return False
 
 def check_url_against_threat_feeds(url, threat_feeds):
@@ -64,7 +68,9 @@ def check_url_against_threat_feeds(url, threat_feeds):
     for feed_url in threat_feeds:
         try:
             logging.info(f"Checking against threat feed: {feed_url}")
-            response = requests.get(feed_url)
+            # No timeout here once let a hung feed host stall the whole
+            # run; the feed is a large CSV and 30 seconds is the budget.
+            response = requests.get(feed_url, timeout=30)
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
 
             # Simple string matching (can be improved with regular expressions)
@@ -95,7 +101,7 @@ def analyze_url_with_virustotal(url, api_key):
         return None
 
     url_id = requests.utils.quote(url)
-    url = f"https://www.virustotal.com/api/v3/urls/{url_id}"
+    api_url = f"https://www.virustotal.com/api/v3/urls/{url_id}"
 
     headers = {
         "accept": "application/json",
@@ -103,7 +109,7 @@ def analyze_url_with_virustotal(url, api_key):
     }
 
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(api_url, headers=headers, timeout=10)
         response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
         json_response = response.json()
         logging.debug(f"VirusTotal API Response: {json_response}") # Log the full response for debugging
@@ -143,7 +149,7 @@ def main():
     if not is_valid_url(url):
         logging.error(f"Invalid URL: {url}")
         print("Error: Invalid URL. Please provide a valid URL.")
-        return  # Exit the program
+        sys.exit(1)
 
     logging.info(f"Analyzing URL: {url}")
 
@@ -174,17 +180,8 @@ def main():
     except Exception as e:
         logging.error(f"Error writing to CSV file: {e}")
         print(f"Error writing to CSV file: {e}")
-        return
+        sys.exit(1)
 
 
 if __name__ == "__main__":
     main()
-
-
-# Usage Examples:
-# 1. Basic usage: python main.py https://www.example.com
-# 2. Verbose output: python main.py https://www.example.com -v
-# 3. Specify output file: python main.py https://www.example.com -o my_report.csv
-# 4. With VirusTotal API key set as environment variable:
-#    export VIRUSTOTAL_API_KEY="your_api_key"
-#    python main.py https://www.example.com
