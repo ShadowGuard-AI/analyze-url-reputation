@@ -1,3 +1,5 @@
+![Banner](banner.png)
+
 # analyze-url-reputation
 Checks URLs against multiple threat intelligence feeds to determine their reputation and potential maliciousness, leveraging the requests and virustotal-python libraries. - Focused on Data analysis and reporting
 
