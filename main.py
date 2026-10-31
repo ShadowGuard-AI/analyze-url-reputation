@@ -1,4 +1,6 @@
 import argparse
+import csv
+import io
 import logging
 import sys
 import pandas as pd
@@ -52,6 +54,40 @@ def is_valid_url(url):
     except ValueError:
         return False
 
+def match_url_against_feed_text(url, feed_text):
+    """
+    Matches a URL against the listed URLs in one feed's CSV text.
+
+    The feed is parsed as CSV and the URL is compared against the url
+    field of each row (the third column in the URLhaus layout; comment
+    lines and a header row are skipped). Two match types are returned:
+
+    - "exact" with confidence "high": the URL is equal to a listed URL.
+    - "substring" with confidence "low": the URL and a listed URL
+      overlap only in part, one containing the other. A prefix of a
+      listed URL and a bare domain root are substring matches, not
+      exact ones.
+
+    Returns a dict with feed match fields, or None when no listed URL
+    is an exact match or a partial overlap.
+    """
+    substring_match = None
+    reader = csv.reader(io.StringIO(feed_text))
+    for row in reader:
+        if not row or len(row) < 3:
+            continue
+        if row[0].strip().startswith("#") or row[2].strip().lower() == "url":
+            continue
+        listed_url = row[2].strip()
+        if not listed_url:
+            continue
+        if url == listed_url:
+            return {"match_type": "exact", "confidence": "high", "matched_url": listed_url}
+        if substring_match is None and (url in listed_url or listed_url in url):
+            substring_match = {"match_type": "substring", "confidence": "low", "matched_url": listed_url}
+    return substring_match
+
+
 def check_url_against_threat_feeds(url, threat_feeds):
     """
     Checks a URL against a list of threat intelligence feeds.
@@ -61,10 +97,16 @@ def check_url_against_threat_feeds(url, threat_feeds):
         threat_feeds (list): A list of threat intelligence feed URLs.
 
     Returns:
-        list: A list of dictionaries, where each dictionary contains information about
-              a match found in a threat feed.  Returns an empty list if no matches are found.
+        tuple: A pair (matches, feed_fetch_succeeded). matches is a list
+            of dictionaries describing each match found; it is empty
+            when no feed listed the URL. feed_fetch_succeeded is True
+            when at least one feed was fetched and parsed, and False
+            when every fetch failed, so a caller can tell "checked, no
+            match" apart from "not checked at all". A failed fetch is
+            never reported as a successful no match result.
     """
     matches = []
+    feed_fetch_succeeded = False
     for feed_url in threat_feeds:
         try:
             logging.info(f"Checking against threat feed: {feed_url}")
@@ -72,18 +114,19 @@ def check_url_against_threat_feeds(url, threat_feeds):
             # run; the feed is a large CSV and 30 seconds is the budget.
             response = requests.get(feed_url, timeout=30)
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+            feed_fetch_succeeded = True
 
-            # Simple string matching (can be improved with regular expressions)
-            if url in response.text:
-                logging.warning(f"URL found in threat feed: {feed_url}")
-                matches.append({"feed": feed_url, "match_type": "exact", "confidence": "high"}) #customize confidence level later based on feed.
+            match = match_url_against_feed_text(url, response.text)
+            if match:
+                logging.warning(f"URL found in threat feed: {feed_url} ({match['match_type']})")
+                matches.append({"feed": feed_url, **match})
             else:
                 logging.debug(f"URL not found in threat feed: {feed_url}")
         except requests.exceptions.RequestException as e:
             logging.error(f"Error fetching threat feed from {feed_url}: {e}")
         except Exception as e:
             logging.error(f"An unexpected error occurred while processing {feed_url}: {e}")
-    return matches
+    return matches, feed_fetch_succeeded
 
 def analyze_url_with_virustotal(url, api_key):
     """
@@ -154,14 +197,24 @@ def main():
     logging.info(f"Analyzing URL: {url}")
 
     # Perform analysis
-    threat_feed_matches = check_url_against_threat_feeds(url, THREAT_FEEDS)
+    threat_feed_matches, feed_fetch_succeeded = check_url_against_threat_feeds(url, THREAT_FEEDS)
     virustotal_analysis = analyze_url_with_virustotal(url, VIRUSTOTAL_API_KEY)
+
+    # The URL counts as checked only when at least one source actually
+    # answered: a feed that was fetched, or a VirusTotal result. When
+    # every feed fetch failed and no VirusTotal result was obtained,
+    # the report says so plainly and the run exits 1, instead of
+    # presenting an empty match list as a completed check.
+    checked = feed_fetch_succeeded or virustotal_analysis is not None
 
     # Prepare data for output
     report_data = {
         "url": url,
         "threat_feed_matches": threat_feed_matches,
-        "virustotal_analysis": virustotal_analysis
+        "virustotal_analysis": virustotal_analysis,
+        "feed_fetch_succeeded": feed_fetch_succeeded,
+        "virustotal_checked": virustotal_analysis is not None,
+        "check_status": "checked" if checked else "not_checked"
     }
 
     # Create a Pandas DataFrame
@@ -180,6 +233,12 @@ def main():
     except Exception as e:
         logging.error(f"Error writing to CSV file: {e}")
         print(f"Error writing to CSV file: {e}")
+        sys.exit(1)
+
+    if not checked:
+        logging.error("URL was not checked: every threat feed fetch failed and no VirusTotal result was obtained.")
+        print("Error: URL was not checked: every threat feed fetch failed and no VirusTotal result was obtained. "
+              "The report records check_status as not_checked.")
         sys.exit(1)
 
 
