@@ -114,6 +114,10 @@ def check_url_against_threat_feeds(url, threat_feeds):
             # run; the feed is a large CSV and 30 seconds is the budget.
             response = requests.get(feed_url, timeout=30)
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+            # The whole feed is downloaded and parsed again on every
+            # single URL check, with no caching between runs. For one
+            # URL that is merely wasteful; in a loop over many URLs it
+            # is the dominant cost and hard on the feed host.
             feed_fetch_succeeded = True
 
             match = match_url_against_feed_text(url, response.text)
@@ -143,6 +147,12 @@ def analyze_url_with_virustotal(url, api_key):
         logging.warning("VirusTotal API key is not set. Skipping VirusTotal analysis.")
         return None
 
+    # This identifier is a percent quoted URL. The API's documented
+    # identifier for a URL is its base64 form or its hash, so this
+    # request can come back not found for a URL the service knows
+    # well, and that None reads the same as a URL with no data. I flag
+    # it here as a known weakness of this lookup rather than a result
+    # worth trusting at face value.
     url_id = requests.utils.quote(url)
     api_url = f"https://www.virustotal.com/api/v3/urls/{url_id}"
 
