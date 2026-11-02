@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 40" role="img" aria-label="Passing headlamp divider, major: a rule across the page with a lamp point travelling along it once, growing as it comes and shrinking as it goes, then resting dark">
+<line x1="0" y1="20" x2="1200" y2="20" stroke="#1c2620" stroke-width="4"/>
+<circle cx="60" cy="20" r="4" fill="#3a3f38">
+<animate attributeName="cx" values="60;1140;1140" keyTimes="0;0.55;1" dur="16s" repeatCount="indefinite"/>
+<animate attributeName="r" values="4;4;11;4;4" keyTimes="0;0.2;0.3;0.45;1" dur="16s" repeatCount="indefinite"/>
+<animate attributeName="fill" values="#3a3f38;#fff0c8;#fff0c8;#3a3f38;#3a3f38" keyTimes="0;0.2;0.35;0.5;1" dur="16s" repeatCount="indefinite"/>
+</circle>
+</svg>

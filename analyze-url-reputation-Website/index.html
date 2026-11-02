@@ -3,161 +3,99 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Analyze Url Reputation: what it is, how it runs, where it stops</title>
-<meta name="description" content="Analyze Url Reputation is one of my projects. The README in the repo is short, so this page sticks to what the files themselves show.">
+<title>analyze-url-reputation: The Timetable Archivist</title>
+<meta name="description" content="Checks one URL against the URLhaus threat feed and, when a key is set, against VirusTotal, and writes the result to a CSV report. Focused on data analysis and reporting.">
 <style>
-:root {
-  --bg: #241a10; --panel: #362818; --ink: #f4ead2;
-  --mut: #483620;
-  --acc: #eeba5c; --acc2: #96b296;
-  --line: #362818;
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink);
-  font-family: 'Trebuchet MS', sans-serif; line-height: 1.55; }
-code, pre, .mono { font-family: 'Courier New', monospace; }
-a { color: var(--acc2); }
-.hero { padding: 3rem 6vw 1rem; }
-.hero img.banner { width: 100%; height: auto; border: 1px solid var(--line);
-  border-radius: 10px; }
-.logo { width: 92px; height: 92px; border-radius: 18px;
-  border: 1px solid var(--line); }
-h1 { font-size: 2.4rem; margin: 0.4em 0 0.1em; }
-h2 { border-bottom: 2px solid var(--acc); padding-bottom: 0.2em;
-  margin-top: 2em; }
-.lede { font-size: 1.15rem; max-width: 62ch; }
-main { padding: 0 6vw 3rem; max-width: 1180px; margin: 0 auto; }
-.grid { display: grid; gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
-.card { background: var(--panel); border: 1px solid var(--line);
-  border-radius: 12px; padding: 1rem 1.2rem; }
-.card.pop { animation: rise 0.7s ease both; }
-@keyframes rise { from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: none; } }
-pre.code { background: #101014; color: #e8e6df; padding: 1rem 1.2rem;
-  border-radius: 12px; overflow-x: auto; font-size: 0.86rem;
-  border-left: 5px solid var(--acc); }
-table { border-collapse: collapse; width: 100%; }
-td, th { border-bottom: 1px solid var(--line); padding: 0.45rem 0.6rem;
-  text-align: left; }
-.shots { display: grid; gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-.shots img { width: 100%; height: auto; border: 1px solid var(--line);
-  border-radius: 10px; background: #f4f1e8; }
-footer { padding: 2rem 6vw; border-top: 1px solid var(--line);
-  color: var(--mut); }
-.rail { display: flex; gap: 1.2rem; align-items: flex-start; }
-.rail nav { position: sticky; top: 1rem; min-width: 180px; }
-@media (max-width: 760px) { .rail { flex-direction: column; }
-  .rail nav { position: static; } }
-@media (prefers-reduced-motion: reduce) {
-  .card.pop { animation: none; } * { scroll-behavior: auto; } }
+@font-face{font-family:'BJCree';src:url('fonts/BJCree.ttf') format('truetype');}
+@font-face{font-family:'Archivo';src:url('fonts/Archivo.ttf') format('truetype');}
+:root{--forest:#1c2620;--silver:#a8adb0;--fog:#e8e6dc;--card:#f4f1e6;--red:#c1272d;--ink:#23261f}
+*{box-sizing:border-box}body{margin:0;background:var(--fog);color:var(--ink);font-family:'Archivo',sans-serif;line-height:1.6}
+h1,h2,h3{font-family:'BJCree',serif}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;background:var(--fog)}
+.hero img.heroimg{width:100%;height:60vh;object-fit:cover;display:block}
+.hero .in{padding:1rem 6vw 2rem;max-width:1080px;margin:0 auto;width:100%}
+.logo{width:210px}
+main{padding:0 6vw 3rem;max-width:1080px;margin:0 auto}
+nav{display:flex;gap:.9rem;flex-wrap:wrap;margin:1.2rem 0}
+.board{display:inline-block;text-decoration:none;background:var(--forest);padding:.55rem .55rem .6rem;border-radius:3px;transition:transform .1s}
+.board span{display:block;background:var(--fog);color:var(--forest);font-family:'BJCree',serif;font-size:.9rem;padding:.45rem 1.1rem;text-align:center;transition:background .15s}
+.board:hover span{background:#fffdf2}
+.board:active{transform:translateY(5px)}
+.board:focus-visible{outline:none}
+.board:focus-visible span{border-bottom:4px solid var(--red)}
+.card{background:var(--card);border:1px solid #c9c4ae;border-top:3px solid var(--forest);padding:.4rem 1.5rem 1.2rem;margin:1.8rem 0;box-shadow:0 2px 8px rgba(28,38,32,.14)}
+.card h2{border-bottom:1px solid #b9b49c;padding-bottom:.4rem}
+pre{background:var(--forest);color:var(--fog);padding:1rem;overflow-x:auto}
+a{color:#7a1d20}
+a::before{content:'';display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid #6d6a5c;background:#d8d4c2;margin-right:.5em;vertical-align:-1px}
+a:hover::before{background:radial-gradient(circle,#fffbe8 0 38%,#d8d4c2 42%)}
+a:active::before{background:#d8d4c2}
+.board::before{content:none}
+.shelf{height:12px;margin:2.2rem 0;background:repeating-linear-gradient(to right,var(--forest) 0 64px,var(--silver) 64px 68px)}
+.tick{border-left:5px solid var(--red);padding-left:1rem}
+.alarm{border:2px solid var(--red)}
+.slip{display:flex;gap:1rem;padding:.5rem 0;border-bottom:1px solid #cfc9b2}
+.slip b{font-family:'BJCree',serif;min-width:52px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem}
+@media(max-width:760px){.two{grid-template-columns:1fr}}
+footer{padding:1rem 6vw 2.4rem;max-width:1080px;margin:0 auto}
 </style>
 </head>
-<body class="layout-term">
-<!-- This page exists for analyze-url-reputation alone: the layout (terminal-frame),
-     the colors, and the type were picked for this project, not
-     shared with the other project pages. The code block below is
-     copied from the file it names, line for line. If it looks
-     plain, that is because the project is plain, and I would
-     rather the page match the project than dress it up. The one
-     thing I will not do here is oversell: what this project does
-     not do is stated on the page, not hidden from it. -->
+<body>
 <header class="hero">
-  <img class="logo" src="assets/logo.png" alt="Analyze Url Reputation logo">
-  <img class="banner" src="assets/banner.png" alt="">
-  <h1>Analyze Url Reputation</h1>
-  <p class="mono"><a href="https://github.com/ShadowGuard-AI/analyze-url-reputation">github.com/ShadowGuard-AI/analyze-url-reputation</a></p>
+<img class="heroimg" src="assets/intro-banner.png" alt="A timetable archive in raking afternoon light: an open spread with a red ribbon on the table, stepped stacks, shelves of volumes, no legible word anywhere">
+<div class="in">
+<img class="logo" src="assets/logo.png" alt="A stepped stack of timetable volumes with the top one open and a red ribbon falling down its front, above the name in station board capitals">
+<h1>analyze-url-reputation</h1>
+<p>The archivist's consultation desk, one long page in the order he would work a query. One entry is brought to a large kept collection and searched carefully.</p>
+<nav>
+<a class="board" href="#query"><span>One Query on the Desk</span></a>
+<a class="board" href="#match"><span>Exact and In Part</span></a>
+<a class="board" href="#status"><span>Was Anyone There to Answer</span></a>
+<a class="board" href="#pocket"><span>Three Slips in the Pocket</span></a>
+</nav>
+</div>
 </header>
-
 <main>
-  <section class="rail">
-    <nav aria-label="on this page">
-      <p class="mono"><a href="#run">Run it</a><br>
-      <a href="#files">The files</a><br>
-      <a href="#sheets">The sheets</a><br>
-      <a href="https://github.com/ShadowGuard-AI/analyze-url-reputation">The repo</a></p>
-    </nav>
-    <div>
-      <p class="lede">Analyze Url Reputation is one of my projects. The README in the repo is short, so this page sticks to what the files themselves show.</p>
-      <div class="grid">
-        <div class="card pop"><h3>What it is</h3>
-          <p>Analyze Url Reputation: 3 files, 210 counted
-          lines across Python 190, Markdown 16, Text 4. One job, done in the
-          open, in files you can read.</p></div>
-        <div class="card pop"><h3>The biggest piece</h3>
-          <p><code>main.py</code> carries the most
-          lines. If the project grows, that file is where the growth
-          lands first, for better or worse.</p></div>
-        <div class="card pop"><h3>The honest gap</h3>
-          <p>No test files yet. That is the honest gap, and the roadmap in the visuals folder says what the first one should cover.</p></div>
-      </div>
-      <section id="run">
-        <h2>Run it</h2>
-        <p>The repo README has the exact commands for this one. The
-        shape is the shape for most of my projects: clone it, read the
-        top file first so you know what will happen, then run it on
-        something you do not mind breaking.</p>
-        <p class="mono">$ git clone https://github.com/ShadowGuard-AI/analyze-url-reputation.git<br>$ cd analyze-url-reputation</p>
-      </section>
-      
-  <section aria-label="real code">
-    <h2>The code, as it sits in the repo</h2>
-    <p>From <code>main.py</code>, line 20 on. I did
-    not tidy it for the page. What you see is what the file has.</p>
-    <pre class="code"><code>]
-
-def setup_argparse():
-    &quot;&quot;&quot;
-    Sets up the argument parser for the command-line interface.
-
-    Returns:
-        argparse.ArgumentParser: The argument parser object.
-    &quot;&quot;&quot;
-    parser = argparse.ArgumentParser(description=&quot;Analyze URL reputation using threat intelligence feeds and VirusTotal.&quot;)
-    parser.add_argument(&quot;url&quot;, help=&quot;The URL to analyze.&quot;)
-    parser.add_argument(&quot;-o&quot;, &quot;--output&quot;, help=&quot;Output file path (CSV format).&quot;, default=&quot;url_analysis_report.csv&quot;)
-    parser.add_argument(&quot;-v&quot;, &quot;--verbose&quot;, action=&quot;store_true&quot;, help=&quot;Enable verbose logging.&quot;)
-    return parser
-
-def is_valid_url(url):
-    &quot;&quot;&quot;
-    Validates a URL to ensure it&#x27;s properly formatted.
-
-    Args:
-        url (str): The URL to validate.</code></pre>
-  </section>
-      <section id="files">
-        <h2>The files that matter</h2>
-        <table><tr><th>File</th><th>Lines</th></tr>
-        <tr><td><code>main.py</code></td><td>190</td></tr>
-        <tr><td><code>README.md</code></td><td>16</td></tr>
-        <tr><td><code>requirements.txt</code></td><td>4</td></tr>
-        </table>
-        <p>Names doing the work: <span class="mono">setup_argparse, is_valid_url, check_url_against_threat_feeds, analyze_url_with_virustotal, main</span>.</p>
-      </section>
-      <section id="sheets">
-        <h2>Drawn by hand</h2>
-        <p>I sketch my projects on notebook paper so I have to
-        understand them well enough to draw them. The full set,
-        with the counts and how they were counted, is the
-        <a href="https://github.com/ShadowGuard-AI/analyze-url-reputation/tree/main/analyze-url-reputation-Visuals">analyze-url-reputation-Visuals</a>
-        folder in the repo. Nothing is drawn over the binder holes.
-        That is a rule, not a style.</p>
-        <div class="shots">
-          <img src="assets/architecture.png" alt="Hand drawn architecture sheet for Analyze Url Reputation">
-          <img src="assets/flowchart.png" alt="Hand drawn flowchart sheet for Analyze Url Reputation">
-          <img src="assets/product-map.png" alt="Hand drawn product map sheet for Analyze Url Reputation">
-        </div>
-      </section>
-    </div>
-  </section>
+<section class="card" id="query"><h2>One Query on the Desk</h2>
+<p>analyze-url-reputation checks one URL against the URLhaus threat feed and, when the operator sets a VIRUSTOTAL_API_KEY environment variable, against VirusTotal, and writes the result to a CSV report. The source files the work under data analysis and reporting.</p>
+<p>One URL per check. The panel stresses the singular in its own sentence, because the tool's whole discipline is one entry consulted against a collection.</p>
+</section>
+<div class="shelf"></div>
+<section class="card" id="match"><h2>Exact and In Part</h2>
+<p>The feed is parsed as CSV and the URL is compared against the url field of each listed row. Two findings can come back, and each has its own card here.</p>
+<div class="two">
+<div class="card"><h3>Exact</h3><p>An exact match carries confidence <b>high</b> and means the URL is equal to a listed URL.</p></div>
+<div class="card"><h3>In Part</h3><p class="tick">A substring match carries confidence <b>low</b> and means the URL and a listed URL overlap only in part, one containing the other. A prefix of a listed URL, or a bare domain root of one, counts as substring and not as exact, and the listed URL which overlapped is recorded as matched_url.</p></div>
+</div>
+<p>No entry in threat_feed_matches means no listed URL matched exactly or in part, in a feed that was fetched. The qualification stays inside the sentence, where the source keeps it.</p>
+</section>
+<div class="shelf"></div>
+<section class="card" id="status"><h2>Was Anyone There to Answer</h2>
+<p>The report records feed_fetch_succeeded, virustotal_checked, and check_status. Check_status is checked when at least one source answered, meaning a feed was fetched or a VirusTotal result came back.</p>
+<div class="card alarm"><h3>Checked Against Nothing</h3>
+<p class="tick">When every feed fetch fails and no VirusTotal result is obtained, the URL was checked against nothing, the report records check_status as not_checked, and the run exits 1.</p></div>
+</section>
+<div class="shelf"></div>
+<section class="card"><h2>Taking the Volume Down</h2>
+<pre>git clone https://github.com/ShadowStrikeHQ/analyze-url-reputation</pre>
+<pre>./analyze-url-reputation [params]</pre>
+<p>The archivist's note under the usage block: the line does not name where the one URL itself is supplied, a gap a new reader will meet immediately, and the desk reports it rather than guessing a flag for it.</p>
+<p><a href="https://github.com/ShadowGuard-AI/analyze-url-reputation">The repository on GitHub</a></p>
+</section>
+<div class="shelf"></div>
+<section class="card" id="pocket"><h2>Three Slips in the Pocket</h2>
+<div class="slip"><b>-h</b><span>Shows the help message and exits.</span></div>
+<div class="slip"><b>-o</b><span>Gives the output file path for the CSV report and defaults to url_analysis_report.csv.</span></div>
+<div class="slip"><b>-v</b><span>Enables verbose logging.</span></div>
+<p>Each slip is printed whole. There are only three, and the desk does not pad the set.</p>
+</section>
+<div class="shelf"></div>
+<section class="card"><h2>The Stamp on the Last Page</h2>
+<p>Licence as documented, reproduced as written and presented as a copyright line, never as the name of a licence:</p>
+<pre>Copyright (c) ShadowStrikeHQ</pre>
+</section>
 </main>
-<footer>
-  <p>Analyze Url Reputation is one of my projects. This page was written
-  from the repo itself on 2026-10-30: the counts are the
-  repo's counts, the code is the repo's code, and the gaps are the
-  repo's gaps.</p>
-</footer>
+<footer><p>Theme: The Timetable Archivist. Type: BJCree for headings, Archivo for reading, both SIL Open Font License 1.1. The lettering reference Seven Segment was reference only and is not embedded.</p></footer>
 </body>
 </html>
