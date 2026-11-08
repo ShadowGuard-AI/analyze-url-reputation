@@ -1,10 +1,8 @@
-![The timetable archive with no legible word in it: an open spread with its red ribbon on the long table, stepped stacks, shelves of volumes band upon band](intro-banner.png)
-
 # analyze-url-reputation
 
-![The archive room late in the day with the name lettered on the one shelf end board at the right](banner.png)
+![Grey anchorage with one ship held alone at its centre under a plain yellow flag, empty water around it on every side, the harbour wall with its berthed shipping small and distant behind and gulls resting on the still water at the frame edges](banner.png)
 
-![Stepped stack of timetable volumes, the top one open, a red ribbon falling down the front, the heading plate](logo.png)
+![One black hulled ship from the side at anchor in flat grey water, a plain yellow flag flying from its mast and its anchor chain running down into the water](logo.png)
 
 ![Archive scene in three depths: a headlamp grows and fades beyond the fixed gantry, window light shifts across the shelf bands, dust settles over the table](scene.svg)
 
