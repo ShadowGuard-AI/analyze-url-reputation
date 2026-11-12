@@ -9,8 +9,7 @@
 ![Archive scene in three depths: a headlamp grows and fades beyond the fixed gantry, window light shifts across the shelf bands, dust settles over the table](scene.svg)
 
 
-# analyze-url-reputation
-Checks one URL against the URLhaus threat feed and, when the operator sets a VIRUSTOTAL_API_KEY environment variable, against VirusTotal, and writes the result to a CSV report. - Focused on Data analysis and reporting
+Checks one URL against the URLhaus threat feed and, when the operator sets a VIRUSTOTAL_API_KEY environment variable, against VirusTotal, and writes the result to a CSV report, focusing on data analysis and reporting.
 
 
 ![Section divider](sep-light.svg)
